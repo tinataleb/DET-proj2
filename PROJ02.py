@@ -37,6 +37,11 @@ client_lang = language.LanguageServiceClient()
 
 pygame.init()
 pygame.mixer.init()
+
+# servo nicknames
+REACTION_SERVO = crickit.servo_1
+CUMULATIVE_SERVO = crickit.servo_2
+
 #MicrophoneStream() is brought in from Google Cloud Platform
 class MicrophoneStream(object):
     """Opens a recording stream as a generator yielding the audio chunks."""
@@ -157,7 +162,8 @@ def listen_print_loop(responses):
             # Make a 'response' to get a sentiment score
             encoding_type = enums_lang.EncodingType.UTF8
             response = client_lang.analyze_sentiment(document, encoding_type=encoding_type)
-            print("Document sentiment score: {}".format(response.document_sentiment.score))
+            sentiment = response.document_sentiment.score
+            print("Document sentiment score: {}".format(sentiment))
  
             #if there's a voice activitated quit - quit!
             if re.search(r'\b(exit|quit)\b', transcript, re.I):
@@ -170,10 +176,17 @@ def listen_print_loop(responses):
             # one of our keywords.
             num_chars_printed = 0
 
-def decide_action(transcript):
+def decide_action(transcript, sentiment):
     
     #here we're using some simple code on the final transcript from
     #GCP to figure out what to do, how to respond. 
+    if sentiment > 0:
+        act_happy()
+    elif sentiment < 0:
+        act_sad()
+    else:
+        act_meh()
+
  '''   
     if re.search('lazy',transcript, re.I) or re.search('don\'t',transcript, re.I) or re.search('don\'t want',transcript, re.I) or re.search('don\'t feel',transcript, re.I) or re.search('can\'t',transcript, re.I):
         LED_Action(1)
@@ -187,6 +200,45 @@ def decide_action(transcript):
         idontknow()
  '''
 
+def act_depressed():
+    # placeholder function for doing something when the flower is already as sad as can be
+    # shake to get attention? speak?
+    pygame.mixer.init()
+    pygame.mixer.music.load('repeat.mp3')
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy(): 
+        pygame.time.Clock().tick(10)
+
+def act_happy():
+    # act happy
+    # the bunch of flowers increases a little in height
+    if CUMULATIVE_SERVO.angle <= 170:
+        CUMULATIVE_SERVO.angle += 10
+    else: # the flower is already as happy as can be
+        act_overlyhappy()
+
+def act_meh():
+    # placeholder function in the weird situation where what's said is completely neutral
+
+def act_overlyhappy():
+    # placeholder function for doing something when the flower is already as happy as can be
+    pygame.mixer.init()
+    pygame.mixer.music.load('repeat.mp3')
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy(): 
+        pygame.time.Clock().tick(10)
+
+def act_sad():
+    # the single flower droops
+    # the bunch of flowers decreases a little
+    REACTION_SERVO.angle = 90
+    if CUMULATIVE_SERVO.angle >= 10:
+        CUMULATIVE_SERVO.angle -= 10
+    else: # the flower is already as sad as can be
+        act_depressed()
+    time.sleep(5)
+    REACTION_SERVO.angle = 0
+
 def repeat(transcript):
     t2s = gTTS('You said {}'.format(transcript), lang ='en')
     t2s.save('repeat.mp3')
@@ -199,15 +251,18 @@ def repeat(transcript):
         
 def main():
     
-    #setting up the GTTS responses as .mp3 files!
-    t2s = gTTS('hmmm', lang ='en')
-    t2s.save('hmmm.mp3')
-    t2s = gTTS('oops.', lang='en')
-    t2s.save('idontknow.mp3')
-    # See http://g.co/cloud/speech/docs/languages
-    # for a list of supported languages.
-    # this code comes from Google Cloud's Speech to Text API!
-    # Check out the links in your handout. Comments are ours.
+    # initialize servo angles
+    REACTION_SERVO.angle = 0
+    CUMULATIVE_SERVO.angle = 180
+
+    #setting up the GTTS responses as .mp3 files! (example)
+    t2s = gTTS('Whatever', lang='en')
+    t2s.save('neutral.mp3')
+    t2s = gTTS('Get out of your head', lang='en')
+    t2s.save('depressed.mp3')
+    t2s = gTTS('Stop being so happy', lang='en')
+    t2s.save('toohappy.mp3')
+
     language_code = 'en-US'  # a BCP-47 language tag
 
     #set up a client
