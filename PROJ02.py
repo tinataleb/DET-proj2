@@ -170,7 +170,7 @@ def listen_print_loop(responses):
                 print('Exiting..')
                 break
             else:
-                decide_action(transcript)
+                decide_action(transcript, sentiment)
 #            print(transcript)
             # Exit recognition if any of the transcribed phrases could be
             # one of our keywords.
@@ -187,24 +187,11 @@ def decide_action(transcript, sentiment):
     else:
         act_meh()
 
- '''   
-    if re.search('lazy',transcript, re.I) or re.search('don\'t',transcript, re.I) or re.search('don\'t want',transcript, re.I) or re.search('don\'t feel',transcript, re.I) or re.search('can\'t',transcript, re.I):
-        LED_Action(1)
-    elif re.search('should',transcript, re.I) or re.search('might',transcript, re.I):
-        LED_Action(2)
-    elif re.search('can',transcript, re.I) or re.search('will',transcript, re.I):
-        LED_Action(3)
-    elif re.search('did',transcript, re.I) or re.search('finished',transcript, re.I) or re.search('done',transcript, re.I) or re.search('completed',transcript, re.I):
-        LED_Action(4)
-    else:
-        idontknow()
- '''
-
 def act_depressed():
     # placeholder function for doing something when the flower is already as sad as can be
     # shake to get attention? speak?
     pygame.mixer.init()
-    pygame.mixer.music.load('repeat.mp3')
+    pygame.mixer.music.load('depressed.mp3')
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy(): 
         pygame.time.Clock().tick(10)
@@ -219,11 +206,16 @@ def act_happy():
 
 def act_meh():
     # placeholder function in the weird situation where what's said is completely neutral
-
+    pygame.mixer.init()
+    pygame.mixer.music.load('neutral.mp3')
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy(): 
+        pygame.time.Clock().tick(10)
+        
 def act_overlyhappy():
     # placeholder function for doing something when the flower is already as happy as can be
     pygame.mixer.init()
-    pygame.mixer.music.load('repeat.mp3')
+    pygame.mixer.music.load('toohappy.mp3')
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy(): 
         pygame.time.Clock().tick(10)
