@@ -20,13 +20,13 @@ import time
 from adafruit_crickit import crickit
 from adafruit_seesaw.neopixel import NeoPixel
  
-#num_pixels = 10  # Number of pixels driven from Crickit NeoPixel terminal
+num_pixels = 10  # Number of pixels driven from Crickit NeoPixel terminal
  
 # The following line sets up a NeoPixel strip on Seesaw pin 20 for Feather
-#pixels = NeoPixel(crickit.seesaw, 20, num_pixels)
+pixels = NeoPixel(crickit.seesaw, 20, num_pixels)
 
 # Audio recording parameters, set for our USB mic.
-RATE = 44100 #if you change mics - be sure to change this :)
+RATE = 48000 # this should be 48000 for new mic; 44100 for old
 CHUNK = int(RATE / 10)  # 100ms
 
 credential_path = "/home/pi/DET-2019-d3b82e6383ae.json" #replace with your file name!
@@ -41,6 +41,21 @@ pygame.mixer.init()
 # servo nicknames
 REACTION_SERVO = crickit.servo_1
 CUMULATIVE_SERVO = crickit.servo_2
+POT_SERVO = crickit.servo_3
+
+# original servo angles
+original_reaction_angle = 0
+original_cumulative_angle = 180
+original_pot_angle = 90
+
+# colors
+RED = (255, 0, 0)
+YELLOW = (255, 150, 0)
+GREEN = (0, 255, 0)
+CYAN = (0, 255, 255)
+BLUE = (0, 0, 255)
+PURPLE = (180, 0, 255)
+OFF = (0,0,0)
 
 #MicrophoneStream() is brought in from Google Cloud Platform
 class MicrophoneStream(object):
@@ -179,25 +194,25 @@ def listen_print_loop(responses):
 def decide_action(transcript, sentiment):
     
     #here we're using some simple code on the final transcript from
-    #GCP to figure out what to do, how to respond. 
-    if sentiment > 0:
+    #GCP to figure out what to do, how to respond.
+    if re.search('good morning',transcript, re.I):
+        greet()
+    elif sentiment > 0:
         act_happy()
     elif sentiment < 0:
         act_sad()
     else:
         act_meh()
 
-def act_depressed():
-    # placeholder function for doing something when the flower is already as sad as can be
-    # shake to get attention? speak?
-    pygame.mixer.init()
-    pygame.mixer.music.load('depressed.mp3')
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy(): 
-        pygame.time.Clock().tick(10)
-
 def act_happy():
     # act happy
+    # the single flower bounces a little
+    for i in range(3):
+        REACTION_SERVO.angle = 20
+        time.sleep(0.1)
+        REACTION_SERVO.angle = original_reaction_angle
+        time.sleep(0.1)
+        
     # the bunch of flowers increases a little in height
     if CUMULATIVE_SERVO.angle <= 170:
         CUMULATIVE_SERVO.angle += 10
@@ -214,12 +229,25 @@ def act_meh():
         
 def act_overlyhappy():
     # placeholder function for doing something when the flower is already as happy as can be
+    happy_lights()
+    shake_pot()
     pygame.mixer.init()
     pygame.mixer.music.load('toohappy.mp3')
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy(): 
         pygame.time.Clock().tick(10)
 
+def act_overlysad():
+    # placeholder function for doing something when the flower is already as sad as can be
+    # shake to get attention? speak?
+    sad_lights()
+    shake_pot()
+    pygame.mixer.init()
+    pygame.mixer.music.load('depressed.mp3')
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy(): 
+        pygame.time.Clock().tick(10)
+        
 def act_sad():
     # the single flower droops
     # the bunch of flowers decreases a little
@@ -227,9 +255,59 @@ def act_sad():
     if CUMULATIVE_SERVO.angle >= 10:
         CUMULATIVE_SERVO.angle -= 10
     else: # the flower is already as sad as can be
-        act_depressed()
+        act_overlysad()
     time.sleep(5)
-    REACTION_SERVO.angle = 0
+    REACTION_SERVO.angle = original_reaction_angle
+
+def greet():
+    sound_file = "/home/pi/DET2019_Class5/hello2.wav"
+    pg.mixer.music.load(sound_file)
+    pg.mixer.music.play()
+
+def happy_lights():
+    # celebratory LED lights
+    polarity = 0
+    for j in range(15):
+        for i in range(num_pixels):
+            rc_index = (i * 256 // 10) + j*5
+            pixels[i] = wheel(rc_index & 255)
+            if (polarity == 1 and i % 2 == 0) or (polarity == 0 and i % 2 != 0):
+                pixels[i] = OFF
+        pixels.show()
+        polarity = not polarity
+        time.sleep(0.1)
+    pixels.fill(OFF)
+
+def sad_lights():
+    for i in range(5):
+        pixels.fill(RED)
+        time.sleep(0.2)
+        pixels.fill(OFF)
+        time.sleep(0.2)
+    pixels.fill(OFF)
+
+def shake_pot():
+    # shake the pot
+    delay = 0.2
+    shake_angle = 20
+    POT_SERVO.angle += shake_angle
+    for i in range(5):
+        time.sleep(delay)
+        POT_SERVO.angle -= 2*shake_angle
+        time.sleep(delay)
+        POT_SERVO.angle += 2*shake_angle
+    POT_SERVO.angle = original_pot_angle
+    
+def wheel(pos):
+    if pos < 0 or pos > 255:
+        return (0,0,0)
+    if pos < 85:
+        return (255 - pos * 3, pos * 3, 0)
+    if pos < 170:
+        pos -= 85
+        return (0, 255 - pos * 3, pos * 3)
+    pos -= 170
+    return (pos * 3, 0, 255 - pos * 3)
 
 def repeat(transcript):
     t2s = gTTS('You said {}'.format(transcript), lang ='en')
@@ -244,8 +322,12 @@ def repeat(transcript):
 def main():
     
     # initialize servo angles
-    REACTION_SERVO.angle = 0
-    CUMULATIVE_SERVO.angle = 180
+    REACTION_SERVO.angle = original_reaction_angle
+    CUMULATIVE_SERVO.angle = original_cumulative_angle
+    POT_SERVO.angle = original_pot_angle
+    
+    # initialize lights
+    pixels.fill(OFF)
 
     #setting up the GTTS responses as .mp3 files! (example)
     t2s = gTTS('Whatever', lang='en')
