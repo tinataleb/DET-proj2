@@ -208,8 +208,8 @@ def act_happy():
     # act happy
     # the single flower bounces a little
     sound_file = "happy.wav"
-    pg.mixer.music.load(sound_file)
-    pg.mixer.music.play()
+    pygame.mixer.music.load(sound_file)
+    pygame.mixer.music.play()
     for i in range(3):
         REACTION_SERVO.angle = 20
         time.sleep(0.1)
@@ -233,8 +233,8 @@ def act_meh():
 def act_overlyhappy():
     # placeholder function for doing something when the flower is already as happy as can be
     sound_file = "dance.wav"
-    pg.mixer.music.load(sound_file)
-    pg.mixer.music.play()
+    pygame.mixer.music.load(sound_file)
+    pygame.mixer.music.play()
     happy_lights()
     shake_pot()
 
@@ -243,8 +243,8 @@ def act_overlysad():
     # placeholder function for doing something when the flower is already as sad as can be
     # shake to get attention? speak?
     sound_file = "alarm.wav"
-    pg.mixer.music.load(sound_file)
-    pg.mixer.music.play()
+    pygame.mixer.music.load(sound_file)
+    pygame.mixer.music.play()
     sad_lights()
     shake_pot()
         
@@ -252,8 +252,8 @@ def act_sad():
     # the single flower droops
     # the bunch of flowers decreases a little
     sound_file = "droop.wav"
-    pg.mixer.music.load(sound_file)
-    pg.mixer.music.play()
+    pygame.mixer.music.load(sound_file)
+    pygame.mixer.music.play()
     REACTION_SERVO.angle = 90
     if CUMULATIVE_SERVO.angle >= 10:
         CUMULATIVE_SERVO.angle -= 10
@@ -264,8 +264,8 @@ def act_sad():
 
 def greet():
     sound_file = "goodmorning.wav"
-    pg.mixer.music.load(sound_file)
-    pg.mixer.music.play()
+    pygame.mixer.music.load(sound_file)
+    pygame.mixer.music.play()
     happy_lights()
     shake_pot()
     REACTION_SERVO.angle = original_reaction_angle
@@ -328,7 +328,7 @@ def repeat(transcript):
         pygame.time.Clock().tick(10)
         
 def main():
-    
+ 
     # initialize servo angles
     REACTION_SERVO.angle = original_reaction_angle
     CUMULATIVE_SERVO.angle = original_cumulative_angle
