@@ -20,7 +20,7 @@ import time
 from adafruit_crickit import crickit
 from adafruit_seesaw.neopixel import NeoPixel
  
-num_pixels = 10  # Number of pixels driven from Crickit NeoPixel terminal
+num_pixels = 14  # Number of pixels driven from Crickit NeoPixel terminal
  
 # The following line sets up a NeoPixel strip on Seesaw pin 20 for Feather
 pixels = NeoPixel(crickit.seesaw, 20, num_pixels)
@@ -44,9 +44,10 @@ CUMULATIVE_SERVO = crickit.servo_2
 POT_SERVO = crickit.servo_3
 
 # original servo angles
-original_reaction_angle = 0
-original_cumulative_angle = 180
+original_reaction_angle = 110
+original_cumulative_angle = 90
 original_pot_angle = 90
+cumulative_delta_angle = 90
 
 # colors
 RED = (255, 0, 0)
@@ -177,9 +178,11 @@ def listen_print_loop(responses):
             # Make a 'response' to get a sentiment score
             encoding_type = enums_lang.EncodingType.UTF8
             response = client_lang.analyze_sentiment(document, encoding_type=encoding_type)
+            #response = "To the person who pleases Him, God gives wisdom, knowledge and happiness, but to the sinner he gives the task of gathering and storing up wealth to hand it over to the one who pleases God. This too is meaningless, a chasing after the wind. I am not saying this because I am in need, for I have learned to be content whatever the circumstances. I know what it is to be in need, and I know what it is to have plenty. I have learned the secret of being content in any and every situation, whether well fed or hungry, whether living in plenty or in want. I can do all things through Christ who gives me strength."
             sentiment = response.document_sentiment.score
+            magnitude = response.document_sentiment.magnitude
             print("Document sentiment score: {}".format(sentiment))
- 
+            print("Document magnitude score: {}".format(magnitude))
             #if there's a voice activitated quit - quit!
             if re.search(r'\b(exit|quit)\b', transcript, re.I):
                 print('Exiting..')
@@ -192,43 +195,59 @@ def listen_print_loop(responses):
             num_chars_printed = 0
 
 def decide_action(transcript, sentiment):
-    
+    '''
+    transcript = "To the person who pleases Him, God gives wisdom, knowledge and happiness, but to the sinner he gives the task of gathering and storing up wealth to hand it over to the one who pleases God. This too is meaningless, a chasing after the wind. I am not saying this because I am in need, for I have learned to be content whatever the circumstances. I know what it is to be in need, and I know what it is to have plenty. I have learned the secret of being content in any and every situation, whether well fed or hungry, whether living in plenty or in want. I can do all things through Christ who gives me strength."
+    document = {"content": transcript, "type": enums_lang.Document.Type.PLAIN_TEXT, "language": "en"}
+    encoding_type = enums_lang.EncodingType.UTF8
+    response = client_lang.analyze_sentiment(document, encoding_type=encoding_type)
+    sentiment = response.document_sentiment.score
+    magnitude = response.document_sentiment.magnitude
+    print("example sentiment score: {}".format(sentiment))
+    print("example magnitude score: {}".format(magnitude))
+    '''
     #here we're using some simple code on the final transcript from
     #GCP to figure out what to do, how to respond.
     if re.search('good morning',transcript, re.I):
         greet()
     elif sentiment > 0:
-        act_happy()
+        act_happy(sentiment)
     elif sentiment < 0:
-        act_sad()
+        act_sad(sentiment)
     else:
-        act_meh()
+        act_neutral()
 
-def act_happy():
+def act_happy(sentiment):
     # act happy
     # the single flower bounces a little
     sound_file = "happy.wav"
     pygame.mixer.music.load(sound_file)
     pygame.mixer.music.play()
+    # shake a little
+    '''
     for i in range(3):
-        REACTION_SERVO.angle = 20
+        REACTION_SERVO.angle = original_reaction_angle + 20
         time.sleep(0.1)
         REACTION_SERVO.angle = original_reaction_angle
         time.sleep(0.1)
+     '''
+    REACTION_SERVO.angle = original_reaction_angle
+    #dance
+    if sentiment > 0.4:
+        for i in range(3):
+            time.sleep(0.2)
+            REACTION_SERVO.angle -= 10
+            time.sleep(0.2)
+            REACTION_SERVO.angle = original_reaction_angle
         
     # the bunch of flowers increases a little in height
-    if CUMULATIVE_SERVO.angle <= 170:
-        CUMULATIVE_SERVO.angle += 10
+    if CUMULATIVE_SERVO.angle <= 180 - cumulative_delta_angle:
+        CUMULATIVE_SERVO.angle += cumulative_delta_angle
     else: # the flower is already as happy as can be
         act_overlyhappy()
 
-def act_meh():
+def act_neutral():
     # placeholder function in the weird situation where what's said is completely neutral
-    pygame.mixer.init()
-    pygame.mixer.music.load('neutral.mp3')
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy(): 
-        pygame.time.Clock().tick(10)
+    REACTION_SERVO.angle = original_reaction_angle
         
 def act_overlyhappy():
     # placeholder function for doing something when the flower is already as happy as can be
@@ -248,19 +267,25 @@ def act_overlysad():
     sad_lights()
     shake_pot()
         
-def act_sad():
+def act_sad(score):
     # the single flower droops
     # the bunch of flowers decreases a little
     sound_file = "droop.wav"
     pygame.mixer.music.load(sound_file)
     pygame.mixer.music.play()
-    REACTION_SERVO.angle = 90
-    if CUMULATIVE_SERVO.angle >= 10:
-        CUMULATIVE_SERVO.angle -= 10
+    # droop
+    REACTION_SERVO.angle = (1 - abs(score))*original_reaction_angle
+    '''
+    end_angle = (1 - abs(score))*original_reaction_angle
+    while REACTION_SERVO.angle > end_angle:
+        REACTION_SERVO.angle -= 5
+        time.sleep(0.1)
+    '''    
+    #REACTION_SERVO.angle = original_reaction_angle + 90
+    if CUMULATIVE_SERVO.angle >= cumulative_delta_angle:
+        CUMULATIVE_SERVO.angle -= cumulative_delta_angle
     else: # the flower is already as sad as can be
         act_overlysad()
-    time.sleep(5)
-    REACTION_SERVO.angle = original_reaction_angle
 
 def greet():
     sound_file = "goodmorning.wav"
@@ -275,7 +300,7 @@ def greet():
 def happy_lights():
     # celebratory LED lights
     polarity = 0
-    for j in range(15):
+    for j in range(20):
         for i in range(num_pixels):
             rc_index = (i * 256 // 10) + j*5
             pixels[i] = wheel(rc_index & 255)
@@ -328,11 +353,17 @@ def repeat(transcript):
         pygame.time.Clock().tick(10)
         
 def main():
- 
     # initialize servo angles
     REACTION_SERVO.angle = original_reaction_angle
     CUMULATIVE_SERVO.angle = original_cumulative_angle
     POT_SERVO.angle = original_pot_angle
+    
+    happy_lights()
+    '''
+    for i in range(5):
+        time.sleep(0.5)
+        CUMULATIVE_SERVO.angle = original_cumulative_angle + 20
+    '''
     
     # initialize lights
     pixels.fill(OFF)
