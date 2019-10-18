@@ -207,6 +207,9 @@ def decide_action(transcript, sentiment):
 def act_happy():
     # act happy
     # the single flower bounces a little
+    sound_file = "happy.wav"
+    pg.mixer.music.load(sound_file)
+    pg.mixer.music.play()
     for i in range(3):
         REACTION_SERVO.angle = 20
         time.sleep(0.1)
@@ -229,28 +232,28 @@ def act_meh():
         
 def act_overlyhappy():
     # placeholder function for doing something when the flower is already as happy as can be
+    sound_file = "dance.wav"
+    pg.mixer.music.load(sound_file)
+    pg.mixer.music.play()
     happy_lights()
     shake_pot()
-    pygame.mixer.init()
-    pygame.mixer.music.load('toohappy.mp3')
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy(): 
-        pygame.time.Clock().tick(10)
+
 
 def act_overlysad():
     # placeholder function for doing something when the flower is already as sad as can be
     # shake to get attention? speak?
+    sound_file = "alarm.wav"
+    pg.mixer.music.load(sound_file)
+    pg.mixer.music.play()
     sad_lights()
     shake_pot()
-    pygame.mixer.init()
-    pygame.mixer.music.load('depressed.mp3')
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy(): 
-        pygame.time.Clock().tick(10)
         
 def act_sad():
     # the single flower droops
     # the bunch of flowers decreases a little
+    sound_file = "droop.wav"
+    pg.mixer.music.load(sound_file)
+    pg.mixer.music.play()
     REACTION_SERVO.angle = 90
     if CUMULATIVE_SERVO.angle >= 10:
         CUMULATIVE_SERVO.angle -= 10
@@ -260,9 +263,14 @@ def act_sad():
     REACTION_SERVO.angle = original_reaction_angle
 
 def greet():
-    sound_file = "/home/pi/DET2019_Class5/hello2.wav"
+    sound_file = "goodmorning.wav"
     pg.mixer.music.load(sound_file)
     pg.mixer.music.play()
+    happy_lights()
+    shake_pot()
+    REACTION_SERVO.angle = original_reaction_angle
+    CUMULATIVE_SERVO.angle = original_cumulative_angle
+    POT_SERVO.angle = original_pot_angle
 
 def happy_lights():
     # celebratory LED lights
@@ -330,10 +338,8 @@ def main():
     pixels.fill(OFF)
 
     #setting up the GTTS responses as .mp3 files! (example)
-    t2s = gTTS('Whatever', lang='en')
+    t2s = gTTS('Whatever.', lang='en')
     t2s.save('neutral.mp3')
-    t2s = gTTS('Get out of your head', lang='en')
-    t2s.save('depressed.mp3')
     t2s = gTTS('Stop being so happy', lang='en')
     t2s.save('toohappy.mp3')
 
