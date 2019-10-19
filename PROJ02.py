@@ -46,8 +46,9 @@ POT_SERVO = crickit.servo_3
 # original servo angles
 original_reaction_angle = 110
 original_cumulative_angle = 90
-original_pot_angle = 90
-cumulative_delta_angle = 90
+original_pot_angle = 60
+cumulative_delta_angle = 15
+cumulative_max_angle = 130
 
 # colors
 RED = (255, 0, 0)
@@ -240,7 +241,8 @@ def act_happy(sentiment):
             REACTION_SERVO.angle = original_reaction_angle
         
     # the bunch of flowers increases a little in height
-    if CUMULATIVE_SERVO.angle <= 180 - cumulative_delta_angle:
+    time.sleep(2)
+    if CUMULATIVE_SERVO.angle <= cumulative_max_angle - cumulative_delta_angle:
         CUMULATIVE_SERVO.angle += cumulative_delta_angle
     else: # the flower is already as happy as can be
         act_overlyhappy()
@@ -281,12 +283,15 @@ def act_sad(score):
         REACTION_SERVO.angle -= 5
         time.sleep(0.1)
     '''    
-    #REACTION_SERVO.angle = original_reaction_angle + 90
+    # Update cumulative bunch
+    time.sleep(2)
     if CUMULATIVE_SERVO.angle >= cumulative_delta_angle:
         CUMULATIVE_SERVO.angle -= cumulative_delta_angle
     else: # the flower is already as sad as can be
         act_overlysad()
 
+    REACTION_SERVO.angle = original_reaction_angle - 10
+    
 def greet():
     sound_file = "goodmorning.wav"
     pygame.mixer.music.load(sound_file)
@@ -313,7 +318,7 @@ def happy_lights():
 
 def sad_lights():
     for i in range(5):
-        pixels.fill(RED)
+        pixels.fill(BLUE)
         time.sleep(0.2)
         pixels.fill(OFF)
         time.sleep(0.2)
@@ -358,21 +363,19 @@ def main():
     CUMULATIVE_SERVO.angle = original_cumulative_angle
     POT_SERVO.angle = original_pot_angle
     
-    happy_lights()
-    '''
-    for i in range(5):
-        time.sleep(0.5)
-        CUMULATIVE_SERVO.angle = original_cumulative_angle + 20
-    '''
-    
-    # initialize lights
     pixels.fill(OFF)
-
-    #setting up the GTTS responses as .mp3 files! (example)
-    t2s = gTTS('Whatever.', lang='en')
-    t2s.save('neutral.mp3')
-    t2s = gTTS('Stop being so happy', lang='en')
-    t2s.save('toohappy.mp3')
+    '''
+    delta = 20
+    for i in range(3):
+        time.sleep(0.5)
+        CUMULATIVE_SERVO.angle += delta
+    time.sleep(2)
+    CUMULATIVE_SERVO.angle = original_cumulative_angle
+    time.sleep(2)
+    for i in range(3):
+        time.sleep(0.5)
+        CUMULATIVE_SERVO.angle -= delta
+    '''
 
     language_code = 'en-US'  # a BCP-47 language tag
 
